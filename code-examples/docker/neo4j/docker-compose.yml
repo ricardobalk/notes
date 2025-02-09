@@ -1,0 +1,66 @@
+name: neo4j-demo
+services:
+  neo4j:
+    image: neo4j:5.20.0-community-bullseye
+    container_name: neo4j-demo
+    restart: unless-stopped
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    environment:
+      - NEO4J_AUTH=${NEO4J_USERNAME:-neo4j}/${NEO4J_PASSWORD:-neo4jdemo}
+      - NEO4J_dbms_security_auth__minimum__password__length=${NEO4J_dbms_security_auth__minimum__password__length:-8}
+      - NEO4J_server_memory_pagecache_size=${NEO4J_server_memory_pagecache_size:-512M}
+      - NEO4J_server_memory_heap_initial__size=${NEO4J_server_memory_heap_initial__size:-512M}
+      - NEO4J_server_memory_heap_max__size=${NEO4J_server_memory_heap_max__size:-2G}
+      - NEO4J_server_default__listen__address=${NEO4J_server_default__listen__address:-0.0.0.0}
+      - NEO4J_dbms_usage__report_enabled=${NEO4J_dbms_usage__report_enabled:-false}
+    volumes:
+      - neo4j-conf:/conf
+      - neo4j-data:/data
+      - neo4j-plugins:/plugins
+      - neo4j-logs:/logs
+      - ./import:/import:ro
+    networks:
+      - neo4j-internal
+    healthcheck:
+        test: ["CMD", "cypher-shell", "RETURN 1"]
+        interval: 15s
+        timeout: 5s
+        retries: 5
+        start_period: 30s
+
+  neo4j-autoimporter:
+    image: neo4j:5.20.0-community-bullseye
+    container_name: neo4j-demo-autoimporter
+    depends_on:
+      - neo4j
+    environment:
+      - NEO4J_USERNAME=${NEO4J_USERNAME:-neo4j}
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD:-neo4jdemo}
+    entrypoint: >
+      /bin/sh -c "
+        until cypher-shell -d neo4j -a neo4j://neo4j:7687 'RETURN 1' >/dev/null 2>&1; do
+          sleep 5;
+        done;
+
+        if [ -e /import/init.cypher ]; then
+          echo 'Starting autoimporter...';
+          cypher-shell -d neo4j -a neo4j://neo4j:7687 < /import/init.cypher &&
+          echo 'Import completed';
+        else
+          echo 'No init.cypher script found, skipping auto imports.';
+        fi"
+    volumes:
+      - ./import:/import:ro
+    networks:
+      - neo4j-internal
+
+volumes:
+  neo4j-conf:
+  neo4j-data:
+  neo4j-plugins:
+  neo4j-logs:
+
+networks:
+  neo4j-internal:
