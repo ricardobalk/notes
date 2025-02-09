@@ -1,0 +1,99 @@
+  name: metabase-demo
+  services:
+    metabase:
+      image: metabase/metabase:v0.47.9
+      restart: unless-stopped
+      ports:
+        - "81:3000"
+      environment:
+        MB_DB_TYPE: postgres
+        MB_DB_DBNAME: metabase
+        MB_DB_PORT: 5432
+        MB_DB_USER: metabase
+        MB_DB_PASS: example
+        MB_DB_HOST: metabase_db
+        MB_ANONYMOUS_TRACKING_ENABLED: false
+      depends_on:
+        - metabase_db
+      volumes:
+        - metabase_data:/metabase-data
+      networks:
+        - metabase-internal
+        - metabase-demo-databases
+
+    metabase_db:
+      image: postgres:16.1-alpine3.18
+      restart: unless-stopped
+      volumes:
+        - metabase_db_data:/var/lib/postgresql/data
+      environment:
+        POSTGRES_DB: metabase
+        POSTGRES_USER: metabase
+        POSTGRES_PASSWORD: example
+      networks:
+        - metabase-internal
+
+    metabase_init:
+      build:
+        context: .
+        dockerfile: Dockerfile.metabase-init
+      environment:
+        MB_ADMIN_EMAIL: "admin@metabase.local"
+        MB_ADMIN_PASSWORD: "SuperSecurePassword123456!"
+        MB_ADMIN_FIRST_NAME: "Administrator"
+        MB_ADMIN_LAST_NAME: "Administrator"
+        MB_HOSTNAME: "metabase"
+        MB_PORT: "3000"
+        MB_SITE_NAME: "MetabaseDemo"
+      depends_on:
+        - metabase
+      networks:
+        - metabase-internal
+
+    metabase_demo_database_1:
+      image: postgres:16.1-alpine3.18
+      restart: unless-stopped
+      volumes:
+        - metabase_demo_database_1_data:/var/lib/postgresql/data
+        - ./initdb.d/postgres:/docker-entrypoint-initdb.d
+      environment:
+        POSTGRES_DB: demo-database-1-db
+        POSTGRES_USER: demo-database-1-user
+        POSTGRES_PASSWORD: demo-database-1-password
+      networks:
+        - metabase-demo-databases
+
+    metabase_demo_database_2:
+      image: mysql:8.4.4
+      restart: unless-stopped
+      volumes:
+        - metabase_demo_database_2_data:/var/lib/mysql
+        - ./initdb.d/mysql:/docker-entrypoint-initdb.d
+      environment:
+        MYSQL_DATABASE: demo-database-2-db
+        MYSQL_USER: demo-database-2-user
+        MYSQL_PASSWORD: demo-database-2-password
+        MYSQL_ROOT_PASSWORD: root-password
+      networks:
+        - metabase-demo-databases
+    
+    metabase_mailpit:
+      image: axllent/mailpit:v1.22.2
+      environment:
+        MP_QUIET: ${MP_QUIET:-true}
+        MP_SMTP_AUTH: ${MP_SMTP_AUTH:-mailpituser1:mailpitpassword1}
+        MP_SMTP_AUTH_ALLOW_INSECURE: ${MP_SMTP_AUTH_ALLOW_INSECURE:-true}
+      ports:
+        - "82:8025"
+      networks:
+        - metabase-internal
+
+  networks:
+    metabase-internal:
+    metabase-demo-databases:
+
+  volumes:
+    metabase_data:
+    metabase_db_data:
+    metabase_demo_database_1_data:
+    metabase_demo_database_2_data:
