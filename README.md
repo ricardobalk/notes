@@ -1,6 +1,6 @@
 # Notes
 
-> This repository contains my personal notes.
+Collection of personal notes, quirky ideas, and random thoughts.
 
 ### [code-examples/docker/metabase](./code-examples/docker/metabase)
 ### notes/code-examples/docker/metabase
