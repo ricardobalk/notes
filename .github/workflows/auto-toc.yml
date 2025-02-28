@@ -1,0 +1,45 @@
+name: Update Root README
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:  # Allows manual triggering
+
+jobs:
+  auto-toc:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch the full history for proper commit checks
+
+      - name: Update README.md
+        run: |
+          chmod +x .github/scripts/auto-toc.sh
+          .github/scripts/auto-toc.sh
+
+      - name: Check for changes
+        run: |
+          if git diff --quiet; then
+            echo "No changes in README.md. Exiting."
+            exit 0
+          fi
+
+      - name: Prevent self-triggered commit loop
+        run: |
+          last_committer=$(git log -1 --pretty=format:"%ce")
+          if [[ "$last_committer" == "github-actions[bot]@users.noreply.github.com" ]]; then
+            echo "Last commit was made by the bot. Exiting."
+            exit 0
+          fi
+
+      - name: Commit and push changes
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add README.md
+          git commit -m "chore(docs): Update README.md"
+          git push origin main
