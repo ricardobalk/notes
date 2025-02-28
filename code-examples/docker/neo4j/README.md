@@ -1,0 +1,1 @@
+Small Neo4j Graph Database example that automatically imports a basic set of data from a CSV on its first run.
