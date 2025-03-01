@@ -1,0 +1,16 @@
+services:
+  ansible-controller:
+    build:
+      context: .
+      dockerfile: Dockerfile.ansible-controller
+    volumes:
+      - ./ansible-setup:/ansible-setup
+    depends_on:
+      - ansible-target
+    container_name: ansible-controller
+
+  ansible-target:
+    build:
+      context: .
+      dockerfile: Dockerfile.ansible-target
+    hostname: ansible-target

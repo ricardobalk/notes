@@ -1,0 +1,9 @@
+---
+- name: Ping the target
+  ping:
+
+- name: Ensure necessary packages are installed
+  apt:
+    name: "{{ packages }}"
+    state: present
+    update_cache: yes

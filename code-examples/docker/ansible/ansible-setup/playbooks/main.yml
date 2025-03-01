@@ -1,0 +1,6 @@
+---
+- name: Configure Ansible Target
+  hosts: all
+  become: true
+  roles:
+    - setup_target

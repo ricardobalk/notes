@@ -1,0 +1,5 @@
+---
+packages:
+  - curl
+  - vim
+  - htop
